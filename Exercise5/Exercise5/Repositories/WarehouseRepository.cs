@@ -81,23 +81,39 @@ public class WarehouseRepository : IWarehouseRepository
         return result is not null;
     }
     
-    public async Task<bool> DoesOrderExist(int idproduct,int amount,DateTime datarequesta){
-        var query = $"SELECT 1 FROM Order WHERE IdProduct = @ID and Amount=@AMOUN AND CreatedAt < @CreatedAtT";
+    public async Task<bool> DoesOrderExist(ProductWarehouseDTO productWarehouse){
+        var query = $"SELECT 1 FROM Order WHERE IdProduct = @ID and Amount=@AMOUNT AND CreatedAt < @DATAREQUEST";
     
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
     
         command.Connection = connection;
         command.CommandText = query;
-        command.Parameters.AddWithValue("@Id", idproduct);
-        command.Parameters.AddWithValue("@AMOUNT", amount);
+        command.Parameters.AddWithValue("@Id", productWarehouse.IdProduct);
+        command.Parameters.AddWithValue("@AMOUNT", productWarehouse.Amount);
+        command.Parameters.AddWithValue("@DATAREQUEST", productWarehouse.CreatedAt);
     
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
     
         return result is not null;
     }
+
+    public async Task<int> GetOrderId(ProductWarehouseDTO productWarehouse)
+    {
+        var query = $"SELECT OrderID FROM Order WHERE IdProduct = @ID";
     
+        using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
+        using SqlCommand command = new SqlCommand();
+    
+        command.Connection = connection;
+        command.CommandText = query;
+        command.Parameters.AddWithValue("@Id", productWarehouse.IdProduct);
+    
+        await connection.OpenAsync();
+        var result = await command.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
 
     //////////////// DOTAD JEST OK /////////////////////////////
     
@@ -129,7 +145,7 @@ public class WarehouseRepository : IWarehouseRepository
         return newId;
     }
     
-    public async Task UpdateOrderFulfilledAt(Order order)
+    public async Task UpdateOrderFulfilledAt(int orderId)
     {
         string connectionString = _configuration.GetConnectionString("Default");
         string query = @" UPDATE Orders SET FulfilledAt = @CurrentDateTime WHERE IdOrder = @order.IdOrder";
@@ -139,13 +155,48 @@ public class WarehouseRepository : IWarehouseRepository
             using (SqlCommand command = new SqlCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@CurrentDateTime", DateTime.Now);
-                command.Parameters.AddWithValue("@OrderId", order.IdOrder);
+                command.Parameters.AddWithValue("@OrderId", orderId);
     
                 await connection.OpenAsync();
                 await command.ExecuteNonQueryAsync();
             }
         }
     }
+    public async Task<bool> WasFullfilled(int orderId)
+    {
+        var query = $"SELECT FullfilledAt FROM Order WHERE IdProduct = @ID";
+    
+        using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
+        using SqlCommand command = new SqlCommand();
+    
+        command.Connection = connection;
+        command.CommandText = query;
+        command.Parameters.AddWithValue("@Id", orderId);
+    
+        await connection.OpenAsync();
+        var result = await command.ExecuteScalarAsync();
+    
+        return result is not null;
+        
+    }
+    public async Task<bool> IsOrderInProduct_Warehouse(int orderId)
+    {
+        var query = $"SELECT 1 FROM ProductWarehouse WHERE IdOrder= @ID";
+    
+        using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
+        using SqlCommand command = new SqlCommand();
+    
+        command.Connection = connection;
+        command.CommandText = query;
+        command.Parameters.AddWithValue("@Id", orderId);
+    
+        await connection.OpenAsync();
+        var result = await command.ExecuteScalarAsync();
+    
+        return result is not null;
+        
+    }
+    
     
     public async Task<int> AddProductToWarehouse(ProductWarehouseDTO productWarehouse)
     {

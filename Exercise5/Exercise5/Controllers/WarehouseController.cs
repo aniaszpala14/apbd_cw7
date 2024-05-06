@@ -22,40 +22,43 @@ public class WarehouseController : Controller
         return Ok(product_warehouse);
     }
     //////////////// DOTAD JEST OK /////////////////////////////
-    ///
-    ///
-    /// 
+   
 
+    [HttpPost("Normal")]
+    public async Task<IActionResult> AddToWarehouse([FromBody] ProductWarehouseDTO productWarehouse)
+    {
+        
+        if (!await _warehouseRepository.DoesWarehouseExist(productWarehouse.IdWarehouse))
+            return NotFound("Warehouse not found");
+        if (!await _warehouseRepository.DoesProductExist(productWarehouse.IdProduct))
+            return NotFound("Product not found");
+        if (productWarehouse.Amount <= 0)
+            return NotFound("Amount is too low");
+        if (!await _warehouseRepository.DoesOrderExist(productWarehouse))
+            return NotFound("There is no order for this id or amount isn't right or wrong data");
+        
+        int orderId = await _warehouseRepository.GetOrderId(productWarehouse);
+        
+        if (await _warehouseRepository.WasFullfilled(orderId))
+            return NotFound("Already fullfilled");
+        if (await _warehouseRepository.IsOrderInProduct_Warehouse(orderId))
+            return NotFound("There is already an order for that");
+            
+
+        int newProductId = await _warehouseRepository.AddProductToWarehouse(productWarehouse);
+        await _warehouseRepository.UpdateOrderFulfilledAt(orderId);
+
+        return Ok(newProductId);
+    }
+    
+    
     [HttpPost("Procedure")]
     public async Task<IActionResult> AddToWarehouse_Procedure(int IdProduct, int IdWarehouse, int Amount)
     {
         var result = await _warehouseRepository.AddProductToWarehouse_Procedure(IdProduct, IdWarehouse, Amount);
         return Ok(result);
     }
-    
-    [HttpPost("Normal")]
-    public async Task<IActionResult> AddToWarehouse([FromBody] ProductWarehouseDTO productWarehouse)
-    {
-        //
-        // if ((!await _warehouseRepository.DoesWarehouseExist(ProductWarehouse.IdWarehouse)) ||
-        //     (!await _warehouseRepository.DoesProductExist(ProductWarehouse.IdProduct)) ||
-        //     (!await _warehouseRepository.DoesOrderExist(ProductWarehouse.IdProduct, ProductWarehouse.Amount,ProductWarehouse.CreatedAt)))
-        //     return NotFound();
-        //
-        // var ware = await _warehouseRepository.AddProductToWarehouse(ProductWarehouse);
-        //
-        // return Ok(ware);
-        //
-        if (!await _warehouseRepository.DoesWarehouseExist(productWarehouse.IdWarehouse))
-            return NotFound("Warehouse not found");
-        if (!await _warehouseRepository.DoesProductExist(productWarehouse.IdProduct))
-            return NotFound("Product not found");
-      
 
-        int newProductId = await _warehouseRepository.AddProductToWarehouse(productWarehouse);
-
-        return Ok(newProductId);
-    }
     
 }
 
