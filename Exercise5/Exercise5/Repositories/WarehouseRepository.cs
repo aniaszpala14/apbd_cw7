@@ -81,17 +81,17 @@ public class WarehouseRepository : IWarehouseRepository
         return result is not null;
     }
     
-    public async Task<bool> DoesOrderExist(ProductWarehouseDTO productWarehouse){
-        var query = $"SELECT 1 FROM Order WHERE IdProduct = @ID and Amount=@AMOUNT AND CreatedAt < @DATAREQUEST";
+    public async Task<bool> DoesOrderExist(int IdProduct,int Amount,DateTime CreatedAt){
+        var query = $"SELECT 1 FROM [Order] WHERE IdProduct = @ID and Amount=@AMOUNT AND CreatedAt < @DATAREQUEST";
     
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
     
         command.Connection = connection;
         command.CommandText = query;
-        command.Parameters.AddWithValue("@Id", productWarehouse.IdProduct);
-        command.Parameters.AddWithValue("@AMOUNT", productWarehouse.Amount);
-        command.Parameters.AddWithValue("@DATAREQUEST", productWarehouse.CreatedAt);
+        command.Parameters.AddWithValue("@Id", IdProduct);
+        command.Parameters.AddWithValue("@AMOUNT", Amount);
+        command.Parameters.AddWithValue("@DATAREQUEST", CreatedAt);
     
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
@@ -101,7 +101,7 @@ public class WarehouseRepository : IWarehouseRepository
 
     public async Task<int> GetOrderId(int ProductId)
     {
-        var query = $"SELECT OrderID FROM Order WHERE IdProduct = @ID";
+        var query = $"SELECT IdOrder FROM [Order] WHERE IdProduct = @ID";
     
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
@@ -163,14 +163,14 @@ public class WarehouseRepository : IWarehouseRepository
     public async Task UpdateOrderFulfilledAt(int orderId)
     {
         string connectionString = _configuration.GetConnectionString("Default");
-        string query = @" UPDATE Orders SET FulfilledAt = @CurrentDateTime WHERE IdOrder = @order.IdOrder";
+        string query = @" UPDATE [Order] SET FulfilledAt = @CurrentDateTime WHERE IdOrder = @IdOrder";
     
         using (SqlConnection connection = new SqlConnection(connectionString))
         {
             using (SqlCommand command = new SqlCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@CurrentDateTime", DateTime.Now);
-                command.Parameters.AddWithValue("@OrderId", orderId);
+                command.Parameters.AddWithValue("@IdOrder", orderId);
     
                 await connection.OpenAsync();
                 await command.ExecuteNonQueryAsync();
@@ -179,7 +179,7 @@ public class WarehouseRepository : IWarehouseRepository
     }
     public async Task<bool> WasFullfilled(int orderId)
     {
-        var query = $"SELECT FullfilledAt FROM Order WHERE IdProduct = @ID";
+        var query = $"SELECT FulfilledAt FROM [Order] WHERE IdProduct = @ID";
     
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
@@ -196,7 +196,7 @@ public class WarehouseRepository : IWarehouseRepository
     }
     public async Task<bool> IsOrderInProduct_Warehouse(int orderId)
     {
-        var query = $"SELECT 1 FROM ProductWarehouse WHERE IdOrder= @ID";
+        var query = $"SELECT 1 FROM Product_Warehouse WHERE IdOrder= @ID";
     
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
@@ -213,7 +213,7 @@ public class WarehouseRepository : IWarehouseRepository
     }
     
     
-    public async Task<int> AddProductToWarehouse(ProductWarehouseDTO productWarehouse)
+    public async Task<int> AddProductToWarehouse(int IdWarehouse,int IdProduct,int Amount,DateTime CreatedAt)
     {
         string connectionString = _configuration.GetConnectionString("Default");
 
@@ -222,17 +222,17 @@ public class WarehouseRepository : IWarehouseRepository
     VALUES (@IdWarehouse, @IdProduct,@IdOrder, @Amount,@Price, @CreatedAt);
     SELECT SCOPE_IDENTITY();";
 
-        int price = await GetPrice(productWarehouse.IdProduct);
+        int price = await GetPrice(IdProduct);
 
         using (SqlConnection connection = new SqlConnection(connectionString))
         {
             using (SqlCommand command = new SqlCommand(query, connection))
             {
-                command.Parameters.AddWithValue("@IdWarehouse", productWarehouse.IdWarehouse);
-                command.Parameters.AddWithValue("@IdProduct", productWarehouse.IdProduct);
-                command.Parameters.AddWithValue("@IdOrder", GetOrderId(productWarehouse.IdProduct));
-                command.Parameters.AddWithValue("@Amount", productWarehouse.Amount);
-                command.Parameters.AddWithValue("@Price", productWarehouse.Amount*price);
+                command.Parameters.AddWithValue("@IdWarehouse",IdWarehouse);
+                command.Parameters.AddWithValue("@IdProduct", IdProduct);
+                command.Parameters.AddWithValue("@IdOrder", await GetOrderId(IdProduct));
+                command.Parameters.AddWithValue("@Amount", Amount);
+                command.Parameters.AddWithValue("@Price", Amount*price);
                 command.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
 
                 await connection.OpenAsync();
