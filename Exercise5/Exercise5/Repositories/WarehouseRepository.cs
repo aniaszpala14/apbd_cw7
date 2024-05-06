@@ -195,19 +195,12 @@ public class WarehouseRepository : IWarehouseRepository
                 command.Parameters.AddWithValue("@IdWarehouse", IdWarehouse);
                 command.Parameters.AddWithValue("@Amount", Amount);
                 command.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-
-                // Parametr zwracający nowe Id
-               // SqlParameter returnParameter = command.Parameters.Add("@NewId", SqlDbType.Int);
-               // returnParameter.Direction = ParameterDirection.Output;
-
                 await connection.OpenAsync();
-                await command.ExecuteNonQueryAsync();
-              //  newId = (int)returnParameter.Value;
+                newId = Convert.ToInt32(await command.ExecuteScalarAsync());
+                
             }
         }
-
-        return 2;
-        //return newId;
+        return newId;
     }
     
     
