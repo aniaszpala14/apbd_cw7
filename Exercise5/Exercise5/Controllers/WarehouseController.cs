@@ -37,7 +37,7 @@ public class WarehouseController : Controller
         if (!await _warehouseRepository.DoesOrderExist(productWarehouse))
             return NotFound("There is no order for this id or amount isn't right or wrong data");
         
-        int orderId = await _warehouseRepository.GetOrderId(productWarehouse);
+        int orderId = await _warehouseRepository.GetOrderId(productWarehouse.IdProduct);
         
         if (await _warehouseRepository.WasFullfilled(orderId))
             return NotFound("Already fullfilled");

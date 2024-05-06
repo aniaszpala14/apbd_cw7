@@ -99,7 +99,7 @@ public class WarehouseRepository : IWarehouseRepository
         return result is not null;
     }
 
-    public async Task<int> GetOrderId(ProductWarehouseDTO productWarehouse)
+    public async Task<int> GetOrderId(int ProductId)
     {
         var query = $"SELECT OrderID FROM Order WHERE IdProduct = @ID";
     
@@ -108,7 +108,22 @@ public class WarehouseRepository : IWarehouseRepository
     
         command.Connection = connection;
         command.CommandText = query;
-        command.Parameters.AddWithValue("@Id", productWarehouse.IdProduct);
+        command.Parameters.AddWithValue("@Id", ProductId);
+    
+        await connection.OpenAsync();
+        var result = await command.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
+    public async Task<int> GetPrice(int ProductId)
+    {
+        var query = $"SELECT Price FROM Product WHERE IdProduct = @ID";
+    
+        using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
+        using SqlCommand command = new SqlCommand();
+    
+        command.Connection = connection;
+        command.CommandText = query;
+        command.Parameters.AddWithValue("@Id", ProductId);
     
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
@@ -203,9 +218,11 @@ public class WarehouseRepository : IWarehouseRepository
         string connectionString = _configuration.GetConnectionString("Default");
 
         string query = @"
-    INSERT INTO Product_Warehouse (IdWarehouse, IdProduct, Amount, CreatedAt)
-    VALUES (@IdWarehouse, @IdProduct, @Amount, @CreatedAt);
+    INSERT INTO Product_Warehouse (IdWarehouse, IdProduct,IdOrder, Amount,Price, CreatedAt)
+    VALUES (@IdWarehouse, @IdProduct,@IdOrder, @Amount,@Price, @CreatedAt);
     SELECT SCOPE_IDENTITY();";
+
+        int price = await GetPrice(productWarehouse.IdProduct);
 
         using (SqlConnection connection = new SqlConnection(connectionString))
         {
@@ -213,7 +230,9 @@ public class WarehouseRepository : IWarehouseRepository
             {
                 command.Parameters.AddWithValue("@IdWarehouse", productWarehouse.IdWarehouse);
                 command.Parameters.AddWithValue("@IdProduct", productWarehouse.IdProduct);
+                command.Parameters.AddWithValue("@IdOrder", GetOrderId(productWarehouse.IdProduct));
                 command.Parameters.AddWithValue("@Amount", productWarehouse.Amount);
+                command.Parameters.AddWithValue("@Price", productWarehouse.Amount*price);
                 command.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
 
                 await connection.OpenAsync();
