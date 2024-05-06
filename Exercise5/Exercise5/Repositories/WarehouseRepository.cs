@@ -54,62 +54,48 @@ public class WarehouseRepository : IWarehouseRepository
     
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
-    
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@Id", id);
-    
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
-        
         return result is not null;
     }
     public async Task<bool> DoesProductExist(int id)
     {
         var query = $"SELECT 1 FROM Product WHERE IdProduct = @Id";
-    
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
-    
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@Id", id);
-    
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
-    
         return result is not null;
     }
     
     public async Task<bool> DoesOrderExist(int IdProduct,int Amount,DateTime CreatedAt){
         var query = $"SELECT 1 FROM [Order] WHERE IdProduct = @ID and Amount=@AMOUNT AND CreatedAt < @DATAREQUEST";
-    
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
-    
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@Id", IdProduct);
         command.Parameters.AddWithValue("@AMOUNT", Amount);
         command.Parameters.AddWithValue("@DATAREQUEST", CreatedAt);
-    
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
-    
         return result is not null;
     }
 
     public async Task<int> GetOrderId(int ProductId)
     {
         var query = $"SELECT IdOrder FROM [Order] WHERE IdProduct = @ID";
-    
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
-    
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@Id", ProductId);
-    
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
         return Convert.ToInt32(result);
@@ -117,54 +103,20 @@ public class WarehouseRepository : IWarehouseRepository
     public async Task<int> GetPrice(int ProductId)
     {
         var query = $"SELECT Price FROM Product WHERE IdProduct = @ID";
-    
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
-    
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@Id", ProductId);
-    
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
         return Convert.ToInt32(result);
-    }
-
-    //////////////// DOTAD JEST OK /////////////////////////////
-    
-    public async Task<int> AddProductToWarehouse_Procedure(int IdProduct, int IdWarehouse, int Amount)
-    {
-        int newId = 0;
-        using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default")))
-        {
-            using (SqlCommand command = new SqlCommand("AddProductToWarehouse", connection))
-            {
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.AddWithValue("@IdProduct", IdProduct);
-                command.Parameters.AddWithValue("@IdWarehouse", IdWarehouse);
-                command.Parameters.AddWithValue("@Amount", Amount);
-                command.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
-
-                // Parametr zwracający nowe Id
-                SqlParameter returnParameter = command.Parameters.Add("@NewId", SqlDbType.Int);
-                returnParameter.Direction = ParameterDirection.Output;
-
-                await connection.OpenAsync();
-                await command.ExecuteNonQueryAsync();
-
-                // Pobranie wartości nowego Id
-                newId = (int)returnParameter.Value;
-            }
-        }
-
-        return newId;
     }
     
     public async Task UpdateOrderFulfilledAt(int orderId)
     {
         string connectionString = _configuration.GetConnectionString("Default");
         string query = @" UPDATE [Order] SET FulfilledAt = @CurrentDateTime WHERE IdOrder = @IdOrder";
-    
         using (SqlConnection connection = new SqlConnection(connectionString))
         {
             using (SqlCommand command = new SqlCommand(query, connection))
@@ -180,43 +132,32 @@ public class WarehouseRepository : IWarehouseRepository
     public async Task<bool> WasFullfilled(int orderId)
     {
         var query = $"SELECT FulfilledAt FROM [Order] WHERE IdProduct = @ID";
-    
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
-    
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@Id", orderId);
-    
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
-    
         return result is not null;
-        
     }
     public async Task<bool> IsOrderInProduct_Warehouse(int orderId)
     {
         var query = $"SELECT 1 FROM Product_Warehouse WHERE IdOrder= @ID";
-    
         using SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default"));
         using SqlCommand command = new SqlCommand();
-    
         command.Connection = connection;
         command.CommandText = query;
         command.Parameters.AddWithValue("@Id", orderId);
-    
         await connection.OpenAsync();
         var result = await command.ExecuteScalarAsync();
-    
         return result is not null;
-        
     }
     
     
     public async Task<int> AddProductToWarehouse(int IdWarehouse,int IdProduct,int Amount,DateTime CreatedAt)
     {
         string connectionString = _configuration.GetConnectionString("Default");
-
         string query = @"
     INSERT INTO Product_Warehouse (IdWarehouse, IdProduct,IdOrder, Amount,Price, CreatedAt)
     VALUES (@IdWarehouse, @IdProduct,@IdOrder, @Amount,@Price, @CreatedAt);
@@ -241,6 +182,34 @@ public class WarehouseRepository : IWarehouseRepository
             }
         }
     }
+    
+    public async Task<int> AddProductToWarehouse_Procedure(int IdProduct, int IdWarehouse, int Amount)
+    {
+        int newId = 0;
+        using (SqlConnection connection = new SqlConnection(_configuration.GetConnectionString("Default")))
+        {
+            using (SqlCommand command = new SqlCommand("AddProductToWarehouse", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@IdProduct", IdProduct);
+                command.Parameters.AddWithValue("@IdWarehouse", IdWarehouse);
+                command.Parameters.AddWithValue("@Amount", Amount);
+                command.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
 
+                // Parametr zwracający nowe Id
+               // SqlParameter returnParameter = command.Parameters.Add("@NewId", SqlDbType.Int);
+               // returnParameter.Direction = ParameterDirection.Output;
+
+                await connection.OpenAsync();
+                await command.ExecuteNonQueryAsync();
+              //  newId = (int)returnParameter.Value;
+            }
+        }
+
+        return 2;
+        //return newId;
+    }
+    
+    
 }
     

@@ -12,18 +12,15 @@ public class WarehouseController : Controller
     private readonly IWarehouseRepository _warehouseRepository;
 
     public WarehouseController(IWarehouseRepository warehouseRepository)
-    {
-        _warehouseRepository = warehouseRepository;
-    }
-    
+    { _warehouseRepository = warehouseRepository; }
+
     [HttpGet("getall")]
-    public IActionResult GetAnimals(){
+    public IActionResult GetAnimals()
+    {
         var product_warehouse = _warehouseRepository.GetProductWarehouse();
         return Ok(product_warehouse);
     }
-    //////////////// DOTAD JEST OK /////////////////////////////
-   
-
+    
     [HttpPost("Normal")]
     public async Task<IActionResult> AddToWarehouse(int IdWarehouse,int IdProduct,int Amount,DateTime CreatedAt)
     {
@@ -43,14 +40,12 @@ public class WarehouseController : Controller
             return NotFound("Already fullfilled");
         if (await _warehouseRepository.IsOrderInProduct_Warehouse(orderId))
             return NotFound("There is already an order for that");
-            
-
+        
         int newProductId = await _warehouseRepository.AddProductToWarehouse(IdWarehouse,IdProduct,Amount,CreatedAt);
         await _warehouseRepository.UpdateOrderFulfilledAt(orderId);
 
         return Ok(newProductId);
     }
-    
     
     [HttpPost("Procedure")]
     public async Task<IActionResult> AddToWarehouse_Procedure(int IdProduct, int IdWarehouse, int Amount)
@@ -58,7 +53,6 @@ public class WarehouseController : Controller
         var result = await _warehouseRepository.AddProductToWarehouse_Procedure(IdProduct, IdWarehouse, Amount);
         return Ok(result);
     }
-
     
 }
 
